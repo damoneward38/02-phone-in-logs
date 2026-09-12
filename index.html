@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phone in Logs — Call Blocking &amp; Intelligent Logs</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0e14;--panel:#11161f;--panel2:#0d121a;--border:#1e2633;--text:#dbe4f0;--dim:#7d8ba0;--accent:#4da3ff;--good:#2ecc71;--warn:#f5a623;--bad:#ff5c5c;--purple:#a78bfa}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#13233b 0%,var(--bg) 55%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,14,20,.85);backdrop-filter:blur(8px);z-index:5}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#22c1c3,#4da3ff);display:grid;place-items:center;font-weight:800;color:#04121f;flex:none}
+header h1{font-size:17px;margin:0;letter-spacing:.2px}header .sub{color:var(--dim);font-size:12px;margin-top:2px}
+.live{display:inline-flex;align-items:center;gap:7px;color:var(--good);font-size:12px;font-weight:600;letter-spacing:.8px;margin-left:auto;background:#0e2018;border:1px solid #1e402f;padding:7px 13px;border-radius:20px}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.wrap{max-width:1280px;margin:0 auto;padding:22px 26px 60px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.stat .lbl{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1.2px}
+.stat .val{font-size:30px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat .val small{font-size:13px;color:var(--dim);font-weight:500}
+.grid{display:grid;grid-template-columns:400px 1fr;gap:16px;align-items:start}
+@media(max-width:1000px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.panel>.h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--panel2)}
+.panel>.h h2{margin:0;font-size:14px;letter-spacing:.2px}.panel>.h .sp{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}.sp.b{background:#122a44;color:var(--accent)}.sp.g{background:#0e2018;color:var(--good)}
+form.rule{padding:14px 16px;display:grid;gap:10px;border-bottom:1px solid var(--border)}
+input,select{width:100%;background:#0b1119;border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;font-family:inherit}
+input:focus,select:focus{border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:11px;color:var(--dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.7px}
+button{cursor:pointer;border:none;border-radius:9px;font-weight:600;font-size:13px;padding:10px 14px;transition:.15s}
+.btn-primary{background:linear-gradient(135deg,#22c1c3,#4da3ff);color:#04121f;width:100%}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--dim)}
+.btn-toggle{background:transparent;border:1px solid var(--border);color:var(--dim);padding:6px 9px;font-size:11px}
+.btn-toggle.on{background:#0e2018;color:var(--good);border-color:#1e402f}
+.rules{max-height:430px;overflow:auto}
+.rule-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #171f2b}
+.rule-item:last-child{border-bottom:none}
+.num{font-weight:600;font-size:14px;font-family:ui-monospace,Menlo,monospace}
+.kind{padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700}.k-block{background:#3d1620;color:#ff8f8f}.k-text{background:#14304a;color:#7fc0ff}.k-all{background:#3a1522;color:#ffb0c2}.k-silent{background:#2a233d;color:#c0b3ff}
+.reason{color:var(--dim);font-size:12px}
+.rule-item .side{margin-left:auto;display:flex;gap:7px;align-items:center}
+.empty{color:var(--dim);text-align:center;padding:34px 20px;font-size:13px}
+table.logs{width:100%;border-collapse:collapse;font-size:13px}
+.logs th{text-align:left;padding:10px 14px;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel2)}
+.logs td{padding:9px 14px;border-bottom:1px solid #161e2a;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.logs td:nth-child(2){white-space:nowrap}
+.badge{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;font-family:system-ui}.b-block{background:#3d1620;color:#ff9d9d}.b-pass{background:#0e2018;color:#7ce09d}.b-text{background:#14304a;color:#7fc0ff}.b-warn{background:#2a2013;color:#facd7d}
+.toolbar{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.toolbar .box{position:relative;flex:1;min-width:180px}
+.toolbar .box svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none}
+.pill{padding:7px 13px;border-radius:20px;background:var(--panel2);border:1px solid var(--border);color:var(--dim);font-size:12px;font-weight:600}
+.pill.on{background:#0e2018;color:var(--good);border-color:#2a4a38}
+.log-body{max-height:520px;overflow:auto}
+.action{background:#3d1620;color:#ff9d9d}
+.action:not(:disabled):hover{background:#54202c;color:#ffe0e0}
+.action:disabled{opacity:.45;cursor:default}
+footer{margin-top:26px;color:#3f4b5d;font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">📵</div>
+  <div><h1>Phone in Logs</h1><div class="sub">Call blocking &amp; intelligent call logs</div></div>
+  <span class="live"><span class="dot"></span>LIVE MONITOR</span>
+</header>
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="lbl">Blocked today</div><div class="val" id="stBlocked">0</div></div>
+    <div class="stat"><div class="lbl">Calls blocked</div><div class="val" id="stCalls">0</div></div>
+    <div class="stat"><div class="lbl">Texts blocked</div><div class="val" id="stTexts">0</div></div>
+    <div class="stat"><div class="lbl">Active rules</div><div class="val" id="stRules">0</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="h"><h2>Block rules</h2><span class="sp g" id="ruleCount">0 active</span>
+        <button class="btn-ghost" style="margin-left:auto" id="seedRules">+ Load presets</button>
+      </div>
+      <form class="rule" id="ruleForm">
+        <div><label for="rnum">Number / prefix</label><input id="rnum" placeholder="e.g. +1-800-555 or 97250" required></div>
+        <div class="row2">
+          <div><label for="rkind">Block type</label>
+            <select id="rkind">
+              <option value="block">Block all</option>
+              <option value="calls">Calls only</option>
+              <option value="texts">Texts only</option>
+              <option value="silent">Silent (send to voicemail)</option>
+            </select>
+          </div>
+          <div><label for="rreason">Reason (optional)</label><input id="rreason" placeholder="e.g. spam"></div>
+        </div>
+        <button class="btn-primary" type="submit">+ Add block rule</button>
+      </form>
+      <div class="rules" id="rulesList"><div class="empty">No block rules yet. Add one or load presets.</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="h"><h2>Live call log</h2><span class="sp b" id="logCount">0 events</span>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn-toggle" id="pauseBtn">⏸ Pause feed</button>
+          <button class="btn-toggle" id="clearLogsBtn">Clear</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="box">
+          <input id="search" placeholder="Search number, caller, reason…">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+        <button class="pill on" data-f="all">All</button>
+        <button class="pill" data-f="blocked">Blocked</button>
+        <button class="pill" data-f="allowed">Allowed</button>
+        <button class="pill" data-f="text">Texts</button>
+      </div>
+      <div class="log-body">
+        <table class="logs">
+          <thead><tr><th>Time</th><th>Number</th><th>Caller</th><th>Type</th><th>Outcome</th><th>Rule</th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <footer>Phone in Logs · simulated live feed · data is local to this browser session</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var rules=[], logs=[], feedPaused=false, counters={blocked:0,calls:0,texts:0};
+  var $=function(s){return document.querySelector(s)};
+  var ruleKindMap={block:'k-all',calls:'k-block',texts:'k-text',silent:'k-silent'};
+  var ruleLabel={block:'ALL',calls:'CALL',texts:'TEXT',silent:'SILENT'};
+  var outcomes=[];
+  var NAMES=["Scam Shield","Unknown","Telemarketer","+1-866-***-4209","Robo Debt Collector","Airport Travel","Insurance Riser","Charity Call","Survey Inc","Delivery Notice"];
+  var PREFIXES=["+972-50-412","+1-866-555","+1-800-999","+44-20-7946","+972-2-612"];
+  for(var i=0;i<80;i++){
+    var n="+1-"+String(200+Math.floor(Math.random()*790))+"-555-"+String(100+Math.floor(Math.random()*899));
+    var name=NAMES[i%NAMES.length], type=Math.random()<.4?"text":"call";
+    var allow=Math.random()<.3;
+    var rule=allow?null:{id:0,kind:type,label:"PAID LIST"};
+    logs.push({time:nowString(),number:n,caller:type==="call"?name:name+" (msg)",type:type,allowed:allow,rule:rule,at:Date.now()-i*40000});
+  }
+  logs.sort(function(a,b){return a.at-b.at});
+
+  function nowString(){
+    var d=new Date();
+    return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+":"+String(d.getSeconds()).padStart(2,"0");
+  }
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+  function ruleMatches(rule,entry){
+    if(rule.disabled)return false;
+    if(rule.kind==="all"||rule.kind===entry.type&&rule.kind==="silent")return true;
+    if(rule.kind==="block")return true;
+    if(rule.kind===entry.type)return true;
+    return false;
+  }
+  function outcomeFor(entry){
+    var match=null;
+    for(var r of rules){if(ruleMatches(r,entry)){match=r;break}}
+    if(match){
+      entry.rule=match;
+      if(match.kind==="silent")return {label:"voicemail",cls:"b-warn",blocked:true};
+      return {label:"BLOCKED",cls:"b-block",blocked:true};
+    }
+    return {label:"allowed",cls:"b-pass",blocked:false};
+  }
+  function renderRules(){
+    $("#ruleCount").textContent=rules.filter(function(r){return !r.disabled}).length+" active";
+    var box=$("#rulesList");
+    $("#stRules").textContent=rules.filter(function(r){return !r.disabled}).length;
+    if(!rules.length){box.innerHTML='<div class="empty">No block rules yet. Add one or load presets.</div>';return}
+    box.innerHTML=rules.map(function(r){
+      return '<div class="rule-item"><div><div class="num">'+esc(r.pattern)+'</div><div class="reason">'+esc(r.reason||"manual rule")+'</div></div>'
+        +'<span class="kind '+ruleKindMap[r.kind]+'">'+ruleLabel[r.kind]+'</span>'
+        +'<div class="side"><button class="btn-toggle '+(r.disabled?"":"on")+'" data-id="'+r.id+'">'+(r.disabled?"OFF":"ON")+'</button>'
+        +'<button class="action" data-del="'+r.id+'" title="Delete rule">✕</button></div></div>';
+    }).join("");
+    box.querySelectorAll("[data-id]").forEach(function(b){b.onclick=function(){toggle(b.dataset.id)}});
+    box.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){remove(b.dataset.del)}});
+  }
+  function renderLogs(){
+    var q=($("#search").value||"").trim().toLowerCase(), resp=logCount();
+    var filt=$(".pill.on").dataset.f;
+    var sel=logs.filter(function(l){
+      var text=(l.number+" "+l.caller+" "+l.rule+" "+(l.outcomeText||"")).toLowerCase();
+      if(q&&text.indexOf(q)===-1)return false;
+      if(filt==="blocked"&&l.outcomeCls!=="b-block"&&l.outcomeCls!=="b-warn")return false;
+      if(filt==="allowed"&&!(l.outcomeCls==="b-pass"))return false;
+      if(filt==="text"&&l.type!=="text")return false;
+      return true;
+    }).slice().reverse().slice(0,120);
+    $("#logCount").textContent=resp+" of "+logs.length+" events";
+    var tb=$("#logBody");
+    if(!sel.length){tb.innerHTML='<tr><td colspan="6" class="empty">No matching log entries.</td></tr>';return}
+    tb.innerHTML=sel.map(function(l){
+      var out=outcomeFor(l);
+      l.outcomeCls=out.cls;l.outcomeText=out.label;
+      return '<tr><td>'+esc(l.time)+'</td><td>'+esc(l.number)+'</td><td>'+(l.type==="text"?'✉ ':'')+esc(l.caller)
+        +'</td><td>'+l.type+'</td><td><span class="badge '+out.cls+'">'+out.label+'</span></td>'
+        +'<td>'+(l.rule?esc(l.rule.pattern):"—")+'</td></tr>';
+    }).join("");
+  }
+  function logCount(){
+    var c={blocked:0,allowed:0,text:0};
+    logs.forEach(function(l){var out=outcomeFor(l);if(out.blocked)c.blocked++;else c.allowed++;if(l.type==="text")c.text++});
+    return c.blocked+c.allowed;
+  }
+  function addRule(r){r.id=Date.now();rules.push(r);renderRules()}
+  function toggle(id){var r=rules.find(function(x){return x.id==id});r.disabled=!r.disabled;renderRules()}
+  function remove(id){rules=rules.filter(function(x){return x.id!=id});renderRules()}
+  function feed(){
+    if(feedPaused)return;
+    var roll=Math.random();
+    var type=roll<.42?"call":(roll<.72?"text":"call");
+    var rule=null;
+    if(Math.random()<.12&&rules.length)rule=rules[Math.floor(Math.random()*rules.length)];
+    var n;
+    if(rule)n=rule.pattern+"-"+String(Math.floor(Math.random()*900)+100);
+    else if(Math.random()<.4&&PREFIXES.length)n=PREFIXES[Math.floor(Math.random()*PREFIXES.length)]+String(Math.floor(Math.random()*900)+100);
+    else n="+1-"+String(200+Math.floor(Math.random()*790))+"-555-"+String(100+Math.floor(Math.random()*899));
+    var e={time:nowString(),number:n,caller:NAMES[Math.floor(Math.random()*NAMES.length)],type:type,allowed:false,rule:null,at:Date.now()};
+    var out=outcomeFor(e);
+    if(out.blocked)counters.blocked++;
+    if(type==="call"&&out.blocked)counters.calls++;
+    if(type==="text"&&out.blocked)counters.texts++;
+    logs.push(e);
+    if(logs.length>600)logs.shift();
+    $("#stBlocked").textContent=counters.blocked;
+    $("#stCalls").textContent=counters.calls;
+    $("#stTexts").textContent=counters.texts;
+    renderLogs();
+  }
+  $("#ruleForm").addEventListener("submit",function(ev){
+    ev.preventDefault();
+    var kind=$("#rkind").value;
+    addRule({pattern:$("#rnum").value.trim(),kind:kind,reason:$("#rreason").value.trim(),disabled:false});
+    $("#rnum").value="";$("#rreason").value="";$("#rnum").focus();
+  });
+  $("#seedRules").onclick=function(){
+    addRule({pattern:"+1-866",kind:"all",reason:"documented spam carrier",disabled:false});
+    addRule({pattern:"+972-50",kind:"calls",reason:"lead-gen robocalls",disabled:false});
+    addRule({pattern:"+44-20",kind:"texts",reason:"phishing SMS",disabled:false});
+    addRule({pattern:"555",kind:"calls",reason:"test fixtures",disabled:true});
+  };
+  $("#search").addEventListener("input",renderLogs);
+  $("#clearLogsBtn").onclick=function(){logs=[];counters={blocked:0,calls:0,texts:0};$("#stBlocked").textContent=0;$("#stCalls").textContent=0;$("#stTexts").textContent=0;renderLogs()};
+  $("#pauseBtn").onclick=function(){feedPaused=!feedPaused;this.textContent=feedPaused?"▶ Resume feed":"⏸ Pause feed";this.classList.toggle("on",feedPaused)};
+  document.querySelectorAll(".pill").forEach(function(p){p.onclick=function(){
+    document.querySelectorAll(".pill").forEach(function(x){x.classList.remove("on")});p.classList.add("on");renderLogs();
+  }});
+  renderRules();
+  renderLogs();
+  setInterval(feed,3400);
+})();
+</script>
+</body>
+</html>
